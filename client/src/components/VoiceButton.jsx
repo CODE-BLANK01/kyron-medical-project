@@ -4,7 +4,8 @@ import _VapiModule from '@vapi-ai/web'
 const Vapi = _VapiModule.default ?? _VapiModule
 
 export default function VoiceButton({ patient, messages }) {
-  const [status, setStatus] = useState('idle')
+  const [webStatus, setWebStatus] = useState('idle')
+  const [phoneStatus, setPhoneStatus] = useState('idle')
   const vapiRef = useRef(null)
 
   useEffect(() => {
@@ -69,22 +70,22 @@ SAFETY — NEVER:
   }
 
   const startWebCall = async () => {
-    if (status === 'connected') {
+    if (webStatus === 'connected') {
       vapiRef.current?.stop()
       vapiRef.current = null
-      setStatus('idle')
+      setWebStatus('idle')
       return
     }
 
-    setStatus('connecting')
+    setWebStatus('connecting')
 
     try {
       const vapi = new Vapi(import.meta.env.VITE_VAPI_PUBLIC_KEY)
       vapiRef.current = vapi
 
-      vapi.on('call-start', () => setStatus('connected'))
-      vapi.on('call-end',   () => { setStatus('idle'); vapiRef.current = null })
-      vapi.on('error',      (e) => { console.error('Vapi error:', e); setStatus('error'); setTimeout(() => setStatus('idle'), 3000) })
+      vapi.on('call-start', () => setWebStatus('connected'))
+      vapi.on('call-end',   () => { setWebStatus('idle'); vapiRef.current = null })
+      vapi.on('error',      (e) => { console.error('Vapi error:', e); setWebStatus('error'); setTimeout(() => setWebStatus('idle'), 3000) })
 
       vapi.on('message', async (msg) => {
   if (msg.type === 'tool-calls') {
@@ -161,13 +162,13 @@ SAFETY — NEVER:
       })
     } catch (err) {
       console.error('Vapi start error:', err)
-      setStatus('error')
-      setTimeout(() => setStatus('idle'), 3000)
+      setWebStatus('error')
+      setTimeout(() => setWebStatus('idle'), 3000)
     }
   }
 
   const callMyPhone = async () => {
-    setStatus('connecting')
+    setPhoneStatus('connecting')
     try {
       const res = await fetch('/api/call/outbound', {
         method: 'POST',
@@ -182,22 +183,16 @@ SAFETY — NEVER:
       })
       const data = await res.json()
       if (data.success) {
-        setStatus('connected')
+        setPhoneStatus('connected')
+        setTimeout(() => setPhoneStatus('idle'), 4000)
       } else {
         throw new Error(data.error)
       }
     } catch (err) {
       console.error('Call error:', err)
-      setStatus('error')
-      setTimeout(() => setStatus('idle'), 3000)
+      setPhoneStatus('error')
+      setTimeout(() => setPhoneStatus('idle'), 3000)
     }
-  }
-
-  const label = {
-    idle:       'Switch to Voice',
-    connecting: 'Connecting...',
-    connected:  'End Call',
-    error:      'Failed — retry',
   }
 
   const borderColor = {
@@ -214,42 +209,48 @@ SAFETY — NEVER:
     error:      'rgba(248,113,113,0.1)',
   }
 
+
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
 
       {/* Phone call button */}
       <button
         onClick={callMyPhone}
-        disabled={status !== 'idle'}
-        title="Call me on my phone"
+        disabled={phoneStatus !== 'idle'}
         style={{
-          width: 36, height: 36, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          opacity: status !== 'idle' ? 0.4 : 1,
+          display: 'flex', alignItems: 'center', gap: 7,
+          padding: '7px 12px', borderRadius: 100,
+          background: bg[phoneStatus],
+          border: `1px solid ${borderColor[phoneStatus]}`,
+          color: 'var(--text-primary)',
+          fontSize: 12, fontWeight: 500,
+          transition: 'all 0.3s ease',
+          cursor: phoneStatus !== 'idle' ? 'not-allowed' : 'pointer',
         }}
       >
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-          <path d="M5.5 1.5c.3.8.5 1.6.5 2.5 0 .3-.2.5-.4.7L4.2 5.8A10 10 0 0 0 9.2 10.8l1.1-1.4c.2-.2.4-.4.7-.4.9 0 1.7.2 2.5.5.3.1.5.4.5.7v2.3c0 .4-.3.5-.6.5C7 13 2 8 2 2.1c0-.3.1-.6.5-.6H5c.3 0 .5.2.5.5z" stroke="var(--text-secondary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
+          <path d="M5.5 1.5c.3.8.5 1.6.5 2.5 0 .3-.2.5-.4.7L4.2 5.8A10 10 0 0 0 9.2 10.8l1.1-1.4c.2-.2.4-.4.7-.4.9 0 1.7.2 2.5.5.3.1.5.4.5.7v2.3c0 .4-.3.5-.6.5C7 13 2 8 2 2.1c0-.3.1-.6.5-.6H5c.3 0 .5.2.5.5z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
+        {phoneStatus === 'connecting' ? 'Calling...' : phoneStatus === 'connected' ? 'Call Placed!' : phoneStatus === 'error' ? 'Failed — retry' : 'Call My Phone'}
       </button>
 
       {/* Web voice call button */}
       <button
         onClick={startWebCall}
+        disabled={webStatus === 'connecting'}
         style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '7px 14px', borderRadius: 100,
-          background: bg[status],
-          border: `1px solid ${borderColor[status]}`,
+          display: 'flex', alignItems: 'center', gap: 7,
+          padding: '7px 12px', borderRadius: 100,
+          background: bg[webStatus],
+          border: `1px solid ${borderColor[webStatus]}`,
           color: 'var(--text-primary)',
           fontSize: 12, fontWeight: 500,
           transition: 'all 0.3s ease',
+          cursor: webStatus === 'connecting' ? 'not-allowed' : 'pointer',
         }}
       >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          {status === 'connected' ? (
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+          {webStatus === 'connected' ? (
             <rect x="2" y="2" width="10" height="10" rx="2" fill="rgba(248,113,113,0.8)"/>
           ) : (
             <>
@@ -258,7 +259,7 @@ SAFETY — NEVER:
             </>
           )}
         </svg>
-        {label[status]}
+        {webStatus === 'connected' ? 'End Web Call' : webStatus === 'connecting' ? 'Connecting...' : 'Web Voice Agent'}
       </button>
 
     </div>

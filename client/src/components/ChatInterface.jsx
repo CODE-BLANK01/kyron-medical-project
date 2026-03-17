@@ -78,8 +78,12 @@ export default function ChatInterface({ patient }) {
 
       {/* Chat header */}
       <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-        <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(94,231,196,0.2), rgba(123,140,255,0.2))', border: '1px solid rgba(94,231,196,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-          🏥
+        <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(94,231,196,0.2), rgba(123,140,255,0.2))', border: '1px solid rgba(94,231,196,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="7" r="3.5" stroke="#5ee7c4" strokeWidth="1.5"/>
+            <path d="M5 20c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="#5ee7c4" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M12 13v4M10 15h4" stroke="#7b8cff" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
         </div>
         <div>
           <div style={{ fontSize: 14, fontWeight: 500 }}>Kyron Care Assistant</div>
